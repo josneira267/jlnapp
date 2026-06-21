@@ -165,6 +165,29 @@
         .company-btn.didi.active { background:linear-gradient(135deg,#9a3412,#f97316); box-shadow:0 6px 18px rgba(249,115,22,0.4); }
         .company-btn.indrive.active { background:linear-gradient(135deg,#6b21a8,#a855f7); box-shadow:0 6px 18px rgba(168,85,247,0.4); }
 
+        /* Totales por app */
+        .app-totals {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+            margin-top: 2px;
+        }
+        .app-total-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 10px 6px;
+            text-align: center; box-shadow: var(--shadow-sm);
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .app-total-label {
+            font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; color: var(--text-muted);
+        }
+        .app-total-value {
+            font-size: 0.85rem; font-weight: 700; font-family: var(--font-mono);
+            color: #fff;
+        }
+        .app-total-card.uber .app-total-value { color: #4ade80; }
+        .app-total-card.didi .app-total-value { color: #f97316; }
+        .app-total-card.indrive .app-total-value { color: #c084fc; }
+
         /* Acciones */
         .actions-block { display: flex; flex-direction: column; gap: 10px; }
         .btn {
@@ -328,6 +351,22 @@
             <button class="company-btn indrive" data-company="InDrive">🛺 InDrive</button>
         </div>
 
+        <!-- Totales por App -->
+        <div class="app-totals">
+            <div class="app-total-card uber">
+                <span class="app-total-label">Uber</span>
+                <span class="app-total-value" id="totalUber">$0</span>
+            </div>
+            <div class="app-total-card didi">
+                <span class="app-total-label">Didi</span>
+                <span class="app-total-value" id="totalDidi">$0</span>
+            </div>
+            <div class="app-total-card indrive">
+                <span class="app-total-label">InDrive</span>
+                <span class="app-total-value" id="totalIndrive">$0</span>
+            </div>
+        </div>
+
         <!-- Acciones -->
         <div class="actions-block">
             <button class="btn btn-short" id="btnViajeCorto">➕ Viaje Corto ($2.800)</button>
@@ -389,6 +428,9 @@
             const mesBruto = document.getElementById('mesBruto');
             const mesLiquido = document.getElementById('mesLiquido');
             const mesHoras = document.getElementById('mesHoras');
+            const totalUber = document.getElementById('totalUber');
+            const totalDidi = document.getElementById('totalDidi');
+            const totalIndrive = document.getElementById('totalIndrive');
             const historyList = document.getElementById('historyList');
             const historyCount = document.getElementById('historyCount');
             const btnCorto = document.getElementById('btnViajeCorto');
@@ -405,9 +447,8 @@
             // Estado
             let diario = { fecha: '', viajes: [], nextId: 1, turnoStart: null, turnoEnd: null };
             let empresa = 'Uber';
-            let historial = []; // [{fecha, viajes, turnoStart, turnoEnd}]
+            let historial = [];
 
-            // ─── persistencia ──────────────────
             function guardar() {
                 localStorage.setItem(STORAGE, JSON.stringify({ diario, historial, empresa }));
             }
@@ -429,9 +470,6 @@
                 return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             }
 
-            function horaActual() { return new Date(); }
-
-            // ─── turno ─────────────────────────
             function actualizarTimer() {
                 if (!diario.turnoStart || diario.turnoEnd) {
                     if (diario.turnoStart && diario.turnoEnd) {
@@ -458,14 +496,12 @@
 
             function alternarTurno() {
                 if (!diario.turnoStart || diario.turnoEnd) {
-                    // Iniciar
-                    diario.turnoStart = horaActual().toISOString();
+                    diario.turnoStart = new Date().toISOString();
                     diario.turnoEnd = null;
                     btnTurno.textContent = '⏹ Finalizar';
                     btnTurno.classList.add('stop');
                 } else {
-                    // Finalizar
-                    diario.turnoEnd = horaActual().toISOString();
+                    diario.turnoEnd = new Date().toISOString();
                     btnTurno.textContent = '▶ Iniciar';
                     btnTurno.classList.remove('stop');
                 }
@@ -473,7 +509,6 @@
                 actualizarTimer();
             }
 
-            // ─── cálculos ──────────────────────
             function getDuracionDia(fecha, viajes, tStart, tEnd) {
                 if (tStart && tEnd) return new Date(tEnd) - new Date(tStart);
                 if (viajes.length > 0) {
@@ -485,29 +520,36 @@
 
             function procesarDatos() {
                 const hoy = hoyStr();
-                // Asegurar diario del día
                 if (diario.fecha !== hoy) {
                     if (diario.fecha && diario.viajes.length > 0) {
                         historial.push({ ...diario });
                     }
                     diario = { fecha: hoy, viajes: [], nextId: diario.nextId || 1, turnoStart: null, turnoEnd: null };
-                    empresa = 'Uber'; // reset? mantener?
+                    empresa = 'Uber';
                     guardar();
                 }
 
-                const viajesHoyArr = diario.viajes || [];
-                const brutoHoyVal = viajesHoyArr.reduce((s, v) => s + v.monto, 0);
-                const liquidoHoyVal = brutoHoyVal - GASTOS;
+                const viajesArr = diario.viajes || [];
+                const brutoTotal = viajesArr.reduce((s, v) => s + v.monto, 0);
+                const liquidoTotal = brutoTotal - GASTOS;
 
-                viajesHoy.textContent = viajesHoyArr.length;
-                brutoHoy.textContent = '$' + brutoHoyVal.toLocaleString('es-CL');
-                liquidoHoy.textContent = (liquidoHoyVal < 0 ? '-$' : '$') + Math.abs(liquidoHoyVal).toLocaleString('es-CL');
-                liquidoHoy.classList.toggle('negative', liquidoHoyVal < 0);
-                liquidoHoy.classList.toggle('positive', liquidoHoyVal >= 0);
+                viajesHoy.textContent = viajesArr.length;
+                brutoHoy.textContent = '$' + brutoTotal.toLocaleString('es-CL');
+                liquidoHoy.textContent = (liquidoTotal < 0 ? '-$' : '$') + Math.abs(liquidoTotal).toLocaleString('es-CL');
+                liquidoHoy.classList.toggle('negative', liquidoTotal < 0);
+                liquidoHoy.classList.toggle('positive', liquidoTotal >= 0);
 
-                // Semana (lunes a hoy)
+                // Totales por app
+                const uberTotal = viajesArr.filter(v => v.empresa === 'Uber').reduce((s, v) => s + v.monto, 0);
+                const didiTotal = viajesArr.filter(v => v.empresa === 'Didi').reduce((s, v) => s + v.monto, 0);
+                const indriveTotal = viajesArr.filter(v => v.empresa === 'InDrive').reduce((s, v) => s + v.monto, 0);
+                totalUber.textContent = '$' + uberTotal.toLocaleString('es-CL');
+                totalDidi.textContent = '$' + didiTotal.toLocaleString('es-CL');
+                totalIndrive.textContent = '$' + indriveTotal.toLocaleString('es-CL');
+
+                // Semana / mes (igual que antes)
                 const ahora = new Date();
-                const diaSemana = ahora.getDay(); // 0 domingo
+                const diaSemana = ahora.getDay();
                 const lunes = new Date(ahora);
                 lunes.setDate(ahora.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
                 const lunesStr = lunes.toISOString().split('T')[0];
@@ -521,15 +563,14 @@
                 }
 
                 todosLosDias.forEach(dia => {
-                    const f = dia.fecha;
-                    const bruto = dia.viajes.reduce((s, v) => s + v.monto, 0);
-                    const horasMs = getDuracionDia(f, dia.viajes, dia.turnoStart, dia.turnoEnd);
-                    if (f >= lunesStr && f <= hoy) {
-                        semanaBrutoTotal += bruto;
+                    const brutoDia = dia.viajes.reduce((s, v) => s + v.monto, 0);
+                    const horasMs = getDuracionDia(dia.fecha, dia.viajes, dia.turnoStart, dia.turnoEnd);
+                    if (dia.fecha >= lunesStr && dia.fecha <= hoy) {
+                        semanaBrutoTotal += brutoDia;
                         semanaHorasTotal += horasMs;
                     }
-                    if (f >= mesInicioStr && f <= hoy) {
-                        mesBrutoTotal += bruto;
+                    if (dia.fecha >= mesInicioStr && dia.fecha <= hoy) {
+                        mesBrutoTotal += brutoDia;
                         mesHorasTotal += horasMs;
                     }
                 });
@@ -553,7 +594,6 @@
                 return `${h}h ${m}m`;
             }
 
-            // ─── historial UI ──────────────────
             function renderHistorial() {
                 historyList.innerHTML = '';
                 const viajesArr = diario.viajes || [];
@@ -609,7 +649,6 @@
                 toastMsg(`✅ $${Math.round(monto).toLocaleString('es-CL')} · ${empresa}`);
             }
 
-            // ─── modal cierre ──────────────────
             function abrirModal() {
                 modalContent.innerHTML = `Se archivará el día de hoy (${diario.viajes.length} viajes) y se reiniciarán los contadores.`;
                 modalOverlay.style.display = 'flex';
@@ -630,7 +669,6 @@
                 toastMsg('📁 Día archivado. Nuevo día listo.');
             }
 
-            // ─── toast ─────────────────────────
             let toastTimer;
             function toastMsg(msg) {
                 if (toastTimer) clearTimeout(toastTimer);
@@ -641,7 +679,6 @@
                 toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
             }
 
-            // ─── eventos ───────────────────────
             btnTurno.addEventListener('click', alternarTurno);
             btnCorto.addEventListener('click', () => agregarViaje(VIAJE_CORTO));
             btnRegistrar.addEventListener('click', () => {
@@ -667,7 +704,6 @@
                 });
             });
 
-            // ─── inicialización ────────────────
             function init() {
                 if (!cargar()) {
                     diario = { fecha: hoyStr(), viajes: [], nextId: 1, turnoStart: null, turnoEnd: null };
@@ -675,9 +711,7 @@
                     empresa = 'Uber';
                     guardar();
                 }
-                // Sincronizar UI empresa
                 companyBtns.forEach(b => b.classList.toggle('active', b.dataset.company === empresa));
-                // Ajustar turno UI
                 if (diario.turnoStart && !diario.turnoEnd) {
                     btnTurno.textContent = '⏹ Finalizar';
                     btnTurno.classList.add('stop');
