@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>JLNapp · Control Total de Ingresos</title>
+    <style>
+        :root {
+            --bg-deep: #0a0a0f;
+            --bg: #111115;
+            --surface: #18181d;
+            --surface-elevated: #1e1e24;
+            --border: #2a2a32;
+            --border-light: #383844;
+            --text-primary: #f0f0f6;
+            --text-secondary: #b0b0bb;
+            --text-muted: #6b6b78;
+            --accent: #4ade80;
+            --accent-glow: rgba(74, 222, 128, 0.25);
+            --accent2: #60a5fa;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --uber: #22c55e;
+            --didi: #f97316;
+            --indrive: #a855f7;
+            --radius-xl: 20px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 2px 6px rgba(0,0,0,0.5);
+            --shadow-md: 0 6px 20px rgba(0,0,0,0.6);
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+            --safe-bottom: env(safe-area-inset-bottom, 16px);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html { -webkit-tap-highlight-color:transparent; -webkit-font-smoothing:antialiased; }
+        body {
+            font-family: var(--font-sans);
+            background: radial-gradient(ellipse at 50% 0%, rgba(74,222,128,0.03) 0%, transparent 60%) var(--bg-deep);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow-x: hidden;
+            letter-spacing: -0.01em;
+        }
+        .app {
+            width: 100%;
+            max-width: 480px;
+            padding: 16px 18px calc(16px + var(--safe-bottom)) 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .logo {
+            width: 44px; height: 44px; border-radius: 13px;
+            background: linear-gradient(135deg, #22c55e, #4ade80, #60a5fa);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; box-shadow: 0 6px 20px rgba(34,197,94,0.35);
+        }
+        .app-name { font-size: 1.15rem; font-weight: 750; color: #fff; }
+        .app-date { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; }
+        .status-pill {
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(30,30,36,0.8); backdrop-filter: blur(10px);
+            border: 1px solid var(--border); padding: 8px 14px;
+            border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+            color: var(--accent); letter-spacing: 0.3px;
+        }
+        .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 50% { box-shadow: 0 0 18px rgba(74,222,128,0.6); } }
+
+        /* Turno card */
+        .turno-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 14px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: var(--shadow-sm); gap: 12px;
+        }
+        .turno-left { display: flex; align-items: center; gap: 12px; }
+        .turno-icon {
+            font-size: 1.8rem; width: 44px; height: 44px;
+            border-radius: 50%; background: rgba(96,165,250,0.1);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .turno-info { display: flex; flex-direction: column; }
+        .turno-label { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.8px; }
+        .turno-time { font-size: 1.25rem; font-weight: 800; font-family: var(--font-mono); color: #fff; }
+        .btn-turno {
+            padding: 12px 18px; border-radius: 24px; border: none;
+            font-weight: 700; font-size: 0.85rem; cursor: pointer;
+            transition: all var(--transition); letter-spacing: -0.2px;
+            color: #fff; background: var(--accent2); box-shadow: 0 4px 14px rgba(96,165,250,0.3);
+            white-space: nowrap; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-turno:active { transform: scale(0.95); }
+        .btn-turno.stop { background: var(--danger); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
+
+        /* Métricas principales */
+        .metrics-row {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+        }
+        .metric-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 14px 10px;
+            text-align: center; display: flex; flex-direction: column; gap: 4px;
+            box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+        }
+        .metric-card::before {
+            content: ''; position: absolute; top:0; left:0; right:0; height: 3px;
+        }
+        .metric-card.trips::before { background: #60a5fa; box-shadow: 0 0 10px rgba(96,165,250,0.3); }
+        .metric-card.gross::before { background: #4ade80; box-shadow: 0 0 10px rgba(74,222,128,0.3); }
+        .metric-card.net::before { background: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,0.3); }
+        .metric-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
+        .metric-value { font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: #fff; }
+        .metric-value.negative { color: #f87171; } .metric-value.positive { color: #4ade80; }
+        .metric-sub { font-size: 0.58rem; color: var(--text-muted); }
+
+        /* Resumen semanal/mensual */
+        .summary-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .summary-card {
+            background: var(--surface-elevated); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 12px 14px;
+            box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 6px;
+        }
+        .summary-header { display: flex; justify-content: space-between; align-items: center; }
+        .summary-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
+        .summary-period { font-size: 0.6rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 8px; }
+        .summary-values { display: flex; justify-content: space-between; }
+        .summary-item { text-align: center; }
+        .summary-item span:first-child { font-size: 0.6rem; color: var(--text-muted); display: block; }
+        .summary-item span:last-child { font-weight: 700; font-size: 0.9rem; color: #fff; font-family: var(--font-mono); }
+
+        /* Empresa */
+        .company-row { display: flex; gap: 7px; }
+        .company-btn {
+            flex:1; padding:13px 6px; border-radius: var(--radius-md);
+            border:2px solid var(--border); background:var(--surface);
+            color:var(--text-secondary); font-weight:700; font-size:0.8rem;
+            display:flex; align-items:center; justify-content:center; gap:6px;
+            cursor:pointer; transition:all var(--transition); min-height:48px;
+            box-shadow:var(--shadow-sm);
+        }
+        .company-btn.active { color:#fff; border-color:transparent; transform:translateY(-1px); }
+        .company-btn.uber.active { background:linear-gradient(135deg,#166534,#22c55e); box-shadow:0 6px 18px rgba(34,197,94,0.4); }
+        .company-btn.didi.active { background:linear-gradient(135deg,#9a3412,#f97316); box-shadow:0 6px 18px rgba(249,115,22,0.4); }
+        .company-btn.indrive.active { background:linear-gradient(135deg,#6b21a8,#a855f7); box-shadow:0 6px 18px rgba(168,85,247,0.4); }
+
+        /* Acciones */
+        .actions-block { display: flex; flex-direction: column; gap: 10px; }
+        .btn {
+            display:flex; align-items:center; justify-content:center; gap:8px;
+            width:100%; padding:17px 22px; border:none; border-radius:var(--radius-lg);
+            font-size:1rem; font-weight:700; cursor:pointer; transition:all var(--transition);
+            min-height:56px; color:#fff; position:relative; overflow:hidden;
+            box-shadow: var(--shadow-md);
+        }
+        .btn:active { transform:scale(0.96); }
+        .btn-short { background:linear-gradient(135deg,#166534,#22c55e,#4ade80); box-shadow:0 6px 24px rgba(34,197,94,0.4); font-size:1.05rem; }
+        .input-row { display:flex; gap:8px; }
+        .input-shell {
+            flex:1; display:flex; align-items:center; background:var(--surface);
+            border:2px solid var(--border); border-radius:var(--radius-lg);
+            padding:0 16px; box-shadow:var(--shadow-sm); gap:8px;
+            transition:border-color var(--transition);
+        }
+        .input-shell:focus-within { border-color:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,0.12); }
+        .input-prefix { font-weight:800; color:var(--text-secondary); font-size:1.1rem; }
+        .input-shell input {
+            flex:1; background:transparent; border:none; outline:none;
+            font-size:1.2rem; font-weight:600; color:#fff; padding:16px 0;
+            font-family:var(--font-mono); caret-color:#f59e0b;
+        }
+        .input-shell input::placeholder { color:var(--text-muted); font-family:var(--font-sans); font-size:0.9rem; }
+        .btn-go {
+            padding:0 22px; border-radius:var(--radius-lg);
+            background:linear-gradient(135deg,#b45309,#f59e0b); border:none;
+            color:#fff; font-weight:700; font-size:0.9rem; cursor:pointer;
+            box-shadow:0 6px 20px rgba(245,158,11,0.35); min-height:56px;
+        }
+
+        /* Historial */
+        .history-section { flex:1; display:flex; flex-direction:column; gap:8px; min-height:100px; }
+        .history-top { display:flex; justify-content:space-between; align-items:center; }
+        .history-label { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); }
+        .history-badge { font-size:0.68rem; font-weight:700; color:var(--text-secondary); background:var(--surface-elevated); padding:4px 10px; border-radius:12px; border:1px solid var(--border); }
+        .history-list { list-style:none; display:flex; flex-direction:column; gap:5px; max-height:280px; overflow-y:auto; padding-right:3px; }
+        .history-item {
+            display:flex; align-items:center; justify-content:space-between;
+            background:var(--surface); border:1px solid var(--border);
+            border-radius:var(--radius-md); padding:12px 14px; gap:8px;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+        .history-item.removing { animation:slideOut 0.25s ease forwards; }
+        @keyframes slideOut { to { opacity:0; transform:translateX(60px); max-height:0; padding:0; margin:0; } }
+        .item-info { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+        .item-num { font-size:0.65rem; font-weight:700; color:var(--text-muted); background:var(--surface-elevated); width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+        .item-meta { display:flex; flex-direction:column; }
+        .item-amount { font-weight:700; font-size:0.95rem; color:#fff; font-family:var(--font-mono); }
+        .item-time { font-size:0.6rem; color:var(--text-muted); }
+        .item-tag { font-size:0.65rem; font-weight:700; padding:2px 8px; border-radius:8px; }
+        .tag-uber { color:#22c55e; background:rgba(34,197,94,0.12); }
+        .tag-didi { color:#f97316; background:rgba(249,115,22,0.12); }
+        .tag-indrive { color:#c084fc; background:rgba(168,85,247,0.12); }
+        .btn-del {
+            width:32px; height:32px; border-radius:50%; background:rgba(239,68,68,0.1);
+            border:1px solid rgba(239,68,68,0.2); color:#ef4444; font-size:1rem;
+            display:flex; align-items:center; justify-content:center; cursor:pointer;
+        }
+        .btn-del:active { background:#ef4444; color:#fff; }
+
+        /* Cerrar día */
+        .footer-area { padding-top:4px; }
+        .btn-end-day {
+            width:100%; padding:16px; border-radius:var(--radius-lg);
+            background:linear-gradient(135deg,#7f1d1d,#dc2626); border:none;
+            color:#fff; font-weight:700; font-size:0.9rem; cursor:pointer;
+            box-shadow:0 6px 20px rgba(239,68,68,0.35); min-height:52px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:100;
+            display:flex; align-items:center; justify-content:center; padding:20px;
+            backdrop-filter:blur(4px);
+        }
+        .modal-dialog {
+            background:var(--surface-elevated); border:1px solid var(--border-light);
+            border-radius:var(--radius-xl); padding:24px; width:100%; max-width:360px;
+            text-align:center; display:flex; flex-direction:column; gap:16px;
+            animation: scaleUp 0.3s ease;
+        }
+        @keyframes scaleUp { from { transform:scale(0.85); opacity:0; } to { transform:scale(1); opacity:1; } }
+        .modal-title { font-size:1.2rem; font-weight:800; }
+        .modal-text { font-size:0.85rem; color:var(--text-secondary); line-height:1.5; }
+        .modal-buttons { display:flex; gap:8px; }
+        .btn-cancel { background:var(--surface); border:2px solid var(--border); color:#fff; }
+        .btn-confirm { background:#ef4444; }
+
+        /* Toast */
+        .toast {
+            position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-120px);
+            background:var(--surface-elevated); border:1px solid var(--border-light);
+            color:#fff; padding:12px 22px; border-radius:24px; font-weight:600;
+            font-size:0.85rem; z-index:200; box-shadow:0 12px 30px rgba(0,0,0,0.6);
+            transition:transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events:none; backdrop-filter:blur(12px);
+        }
+        .toast.show { transform:translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="brand">
+                <div class="logo">🚘</div>
+                <div>
+                    <div class="app-name">JLNapp</div>
+                    <div class="app-date" id="fechaActual"></div>
+                </div>
+            </div>
+            <div class="status-pill"><span class="status-dot"></span> En turno</div>
+        </header>
+
+        <!-- Turno -->
+        <div class="turno-card" id="turnoCard">
+            <div class="turno-left">
+                <div class="turno-icon">⏱️</div>
+                <div class="turno-info">
+                    <span class="turno-label">Tiempo trabajado hoy</span>
+                    <span class="turno-time" id="turnoTimer">00:00:00</span>
+                </div>
+            </div>
+            <button class="btn-turno" id="btnTurno">▶ Iniciar</button>
+        </div>
+
+        <!-- Métricas hoy -->
+        <div class="metrics-row" id="metricsRow">
+            <div class="metric-card trips"><span class="metric-label">Viajes</span><span class="metric-value" id="viajesHoy">0</span><span class="metric-sub">hoy</span></div>
+            <div class="metric-card gross"><span class="metric-label">Bruto</span><span class="metric-value" id="brutoHoy">$0</span><span class="metric-sub">hoy</span></div>
+            <div class="metric-card net"><span class="metric-label">Líquido</span><span class="metric-value negative" id="liquidoHoy">-$30.714</span><span class="metric-sub">hoy</span></div>
+        </div>
+
+        <!-- Resumen semana / mes -->
+        <div class="summary-row">
+            <div class="summary-card" id="semanaCard">
+                <div class="summary-header"><span class="summary-title">📅 Semana</span><span class="summary-period" id="semanaRango"></span></div>
+                <div class="summary-values">
+                    <div class="summary-item"><span>Bruto</span><span id="semanaBruto">$0</span></div>
+                    <div class="summary-item"><span>Líquido</span><span id="semanaLiquido">-$30.714</span></div>
+                    <div class="summary-item"><span>Horas</span><span id="semanaHoras">0h</span></div>
+                </div>
+            </div>
+            <div class="summary-card" id="mesCard">
+                <div class="summary-header"><span class="summary-title">🗓️ Mes</span><span class="summary-period" id="mesRango"></span></div>
+                <div class="summary-values">
+                    <div class="summary-item"><span>Bruto</span><span id="mesBruto">$0</span></div>
+                    <div class="summary-item"><span>Líquido</span><span id="mesLiquido">-$30.714</span></div>
+                    <div class="summary-item"><span>Horas</span><span id="mesHoras">0h</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empresa -->
+        <div class="company-row">
+            <button class="company-btn uber active" data-company="Uber">🚗 Uber</button>
+            <button class="company-btn didi" data-company="Didi">🚕 Didi</button>
+            <button class="company-btn indrive" data-company="InDrive">🛺 InDrive</button>
+        </div>
+
+        <!-- Acciones -->
+        <div class="actions-block">
+            <button class="btn btn-short" id="btnViajeCorto">➕ Viaje Corto ($2.800)</button>
+            <div class="input-row">
+                <div class="input-shell">
+                    <span class="input-prefix">$</span>
+                    <input type="number" id="inputMonto" inputmode="numeric" placeholder="Monto personalizado" min="100" step="100">
+                </div>
+                <button class="btn-go" id="btnRegistrar">Registrar</button>
+            </div>
+        </div>
+
+        <!-- Historial -->
+        <div class="history-section">
+            <div class="history-top">
+                <span class="history-label">📋 Historial de hoy</span>
+                <span class="history-badge" id="historyCount">0 viajes</span>
+            </div>
+            <ul class="history-list" id="historyList"></ul>
+        </div>
+
+        <footer class="footer-area">
+            <button class="btn-end-day" id="btnCerrarDia">🔴 Cerrar Día / Archivar</button>
+        </footer>
+    </div>
+
+    <!-- Modal cierre -->
+    <div class="modal-overlay" id="modalOverlay" style="display:none;">
+        <div class="modal-dialog">
+            <h2 class="modal-title">¿Cerrar jornada?</h2>
+            <p class="modal-text" id="modalContent">Se archivará el día de hoy y se reiniciarán los contadores.</p>
+            <div class="modal-buttons">
+                <button class="btn btn-cancel" id="btnCancelar">Cancelar</button>
+                <button class="btn btn-confirm" id="btnConfirmar">Archivar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (() => {
+            const STORAGE = 'jlnApp_v4';
+            const GASTOS = 15714 + 15000;
+            const VIAJE_CORTO = 2800;
+
+            // DOM
+            const fechaEl = document.getElementById('fechaActual');
+            const turnoTimer = document.getElementById('turnoTimer');
+            const btnTurno = document.getElementById('btnTurno');
+            const viajesHoy = document.getElementById('viajesHoy');
+            const brutoHoy = document.getElementById('brutoHoy');
+            const liquidoHoy = document.getElementById('liquidoHoy');
+            const semanaRango = document.getElementById('semanaRango');
+            const semanaBruto = document.getElementById('semanaBruto');
+            const semanaLiquido = document.getElementById('semanaLiquido');
+            const semanaHoras = document.getElementById('semanaHoras');
+            const mesRango = document.getElementById('mesRango');
+            const mesBruto = document.getElementById('mesBruto');
+            const mesLiquido = document.getElementById('mesLiquido');
+            const mesHoras = document.getElementById('mesHoras');
+            const historyList = document.getElementById('historyList');
+            const historyCount = document.getElementById('historyCount');
+            const btnCorto = document.getElementById('btnViajeCorto');
+            const inputMonto = document.getElementById('inputMonto');
+            const btnRegistrar = document.getElementById('btnRegistrar');
+            const btnCerrar = document.getElementById('btnCerrarDia');
+            const modalOverlay = document.getElementById('modalOverlay');
+            const modalContent = document.getElementById('modalContent');
+            const btnCancelar = document.getElementById('btnCancelar');
+            const btnConfirmar = document.getElementById('btnConfirmar');
+            const toast = document.getElementById('toast');
+            const companyBtns = document.querySelectorAll('.company-btn');
+
+            // Estado
+            let diario = { fecha: '', viajes: [], nextId: 1, turnoStart: null, turnoEnd: null };
+            let empresa = 'Uber';
+            let historial = []; // [{fecha, viajes, turnoStart, turnoEnd}]
+
+            // ─── persistencia ──────────────────
+            function guardar() {
+                localStorage.setItem(STORAGE, JSON.stringify({ diario, historial, empresa }));
+            }
+
+            function cargar() {
+                const raw = localStorage.getItem(STORAGE);
+                if (!raw) return false;
+                try {
+                    const d = JSON.parse(raw);
+                    if (d.diario) diario = d.diario;
+                    if (d.historial) historial = d.historial;
+                    if (d.empresa) empresa = d.empresa;
+                    return true;
+                } catch (e) { return false; }
+            }
+
+            function hoyStr() {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            }
+
+            function horaActual() { return new Date(); }
+
+            // ─── turno ─────────────────────────
+            function actualizarTimer() {
+                if (!diario.turnoStart || diario.turnoEnd) {
+                    if (diario.turnoStart && diario.turnoEnd) {
+                        const duracion = new Date(diario.turnoEnd) - new Date(diario.turnoStart);
+                        turnoTimer.textContent = formatearDuracion(duracion);
+                    } else {
+                        turnoTimer.textContent = '00:00:00';
+                    }
+                    return;
+                }
+                const ahora = new Date();
+                const diff = ahora - new Date(diario.turnoStart);
+                turnoTimer.textContent = formatearDuracion(diff);
+            }
+
+            function formatearDuracion(ms) {
+                if (ms < 0) ms = 0;
+                const seg = Math.floor(ms / 1000);
+                const h = Math.floor(seg / 3600);
+                const m = Math.floor((seg % 3600) / 60);
+                const s = seg % 60;
+                return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }
+
+            function alternarTurno() {
+                if (!diario.turnoStart || diario.turnoEnd) {
+                    // Iniciar
+                    diario.turnoStart = horaActual().toISOString();
+                    diario.turnoEnd = null;
+                    btnTurno.textContent = '⏹ Finalizar';
+                    btnTurno.classList.add('stop');
+                } else {
+                    // Finalizar
+                    diario.turnoEnd = horaActual().toISOString();
+                    btnTurno.textContent = '▶ Iniciar';
+                    btnTurno.classList.remove('stop');
+                }
+                guardar();
+                actualizarTimer();
+            }
+
+            // ─── cálculos ──────────────────────
+            function getDuracionDia(fecha, viajes, tStart, tEnd) {
+                if (tStart && tEnd) return new Date(tEnd) - new Date(tStart);
+                if (viajes.length > 0) {
+                    const timestamps = viajes.map(v => new Date(v.timestamp).getTime());
+                    return Math.max(...timestamps) - Math.min(...timestamps);
+                }
+                return 0;
+            }
+
+            function procesarDatos() {
+                const hoy = hoyStr();
+                // Asegurar diario del día
+                if (diario.fecha !== hoy) {
+                    if (diario.fecha && diario.viajes.length > 0) {
+                        historial.push({ ...diario });
+                    }
+                    diario = { fecha: hoy, viajes: [], nextId: diario.nextId || 1, turnoStart: null, turnoEnd: null };
+                    empresa = 'Uber'; // reset? mantener?
+                    guardar();
+                }
+
+                const viajesHoyArr = diario.viajes || [];
+                const brutoHoyVal = viajesHoyArr.reduce((s, v) => s + v.monto, 0);
+                const liquidoHoyVal = brutoHoyVal - GASTOS;
+
+                viajesHoy.textContent = viajesHoyArr.length;
+                brutoHoy.textContent = '$' + brutoHoyVal.toLocaleString('es-CL');
+                liquidoHoy.textContent = (liquidoHoyVal < 0 ? '-$' : '$') + Math.abs(liquidoHoyVal).toLocaleString('es-CL');
+                liquidoHoy.classList.toggle('negative', liquidoHoyVal < 0);
+                liquidoHoy.classList.toggle('positive', liquidoHoyVal >= 0);
+
+                // Semana (lunes a hoy)
+                const ahora = new Date();
+                const diaSemana = ahora.getDay(); // 0 domingo
+                const lunes = new Date(ahora);
+                lunes.setDate(ahora.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
+                const lunesStr = lunes.toISOString().split('T')[0];
+                const mesInicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+                const mesInicioStr = mesInicio.toISOString().split('T')[0];
+
+                let semanaBrutoTotal = 0, semanaHorasTotal = 0, mesBrutoTotal = 0, mesHorasTotal = 0;
+                const todosLosDias = [...historial];
+                if (diario.fecha === hoy && diario.viajes.length > 0) {
+                    todosLosDias.push(diario);
+                }
+
+                todosLosDias.forEach(dia => {
+                    const f = dia.fecha;
+                    const bruto = dia.viajes.reduce((s, v) => s + v.monto, 0);
+                    const horasMs = getDuracionDia(f, dia.viajes, dia.turnoStart, dia.turnoEnd);
+                    if (f >= lunesStr && f <= hoy) {
+                        semanaBrutoTotal += bruto;
+                        semanaHorasTotal += horasMs;
+                    }
+                    if (f >= mesInicioStr && f <= hoy) {
+                        mesBrutoTotal += bruto;
+                        mesHorasTotal += horasMs;
+                    }
+                });
+
+                const semanaLiquidoTotal = semanaBrutoTotal - GASTOS;
+                const mesLiquidoTotal = mesBrutoTotal - GASTOS;
+
+                semanaRango.textContent = `${lunesStr.split('-')[2]}/${lunesStr.split('-')[1]} - hoy`;
+                mesRango.textContent = `${mesInicioStr.split('-')[2]}/${mesInicioStr.split('-')[1]} - hoy`;
+                semanaBruto.textContent = '$' + semanaBrutoTotal.toLocaleString('es-CL');
+                semanaLiquido.textContent = (semanaLiquidoTotal < 0 ? '-$' : '$') + Math.abs(semanaLiquidoTotal).toLocaleString('es-CL');
+                semanaHoras.textContent = formatearHoras(semanaHorasTotal);
+                mesBruto.textContent = '$' + mesBrutoTotal.toLocaleString('es-CL');
+                mesLiquido.textContent = (mesLiquidoTotal < 0 ? '-$' : '$') + Math.abs(mesLiquidoTotal).toLocaleString('es-CL');
+                mesHoras.textContent = formatearHoras(mesHorasTotal);
+            }
+
+            function formatearHoras(ms) {
+                const h = Math.floor(ms / 3600000);
+                const m = Math.floor((ms % 3600000) / 60000);
+                return `${h}h ${m}m`;
+            }
+
+            // ─── historial UI ──────────────────
+            function renderHistorial() {
+                historyList.innerHTML = '';
+                const viajesArr = diario.viajes || [];
+                historyCount.textContent = `${viajesArr.length} viaje${viajesArr.length !== 1 ? 's' : ''}`;
+                if (viajesArr.length === 0) {
+                    historyList.innerHTML = '<li style="text-align:center;padding:20px;color:var(--text-muted);">📭 Sin viajes hoy</li>';
+                    return;
+                }
+                viajesArr.forEach((v, i) => {
+                    const li = document.createElement('li');
+                    li.className = 'history-item';
+                    const hora = new Date(v.timestamp).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+                    const tagClass = v.empresa === 'Uber' ? 'tag-uber' : v.empresa === 'Didi' ? 'tag-didi' : 'tag-indrive';
+                    li.innerHTML = `
+                        <div class="item-info">
+                            <span class="item-num">${i+1}</span>
+                            <div class="item-meta">
+                                <span class="item-amount">$${v.monto.toLocaleString('es-CL')}</span>
+                                <span class="item-time">${hora}</span>
+                            </div>
+                            <span class="item-tag ${tagClass}">${v.empresa}</span>
+                        </div>
+                        <button class="btn-del">✕</button>
+                    `;
+                    li.querySelector('.btn-del').addEventListener('click', () => eliminarViaje(v.id, li));
+                    historyList.appendChild(li);
+                });
+            }
+
+            function eliminarViaje(id, li) {
+                li.classList.add('removing');
+                li.addEventListener('animationend', () => {
+                    diario.viajes = diario.viajes.filter(v => v.id !== id);
+                    guardar();
+                    renderHistorial();
+                    procesarDatos();
+                }, { once: true });
+            }
+
+            function agregarViaje(monto) {
+                const nuevo = {
+                    id: diario.nextId++,
+                    monto: Math.round(monto),
+                    empresa: empresa,
+                    timestamp: new Date().toISOString()
+                };
+                diario.viajes.push(nuevo);
+                guardar();
+                renderHistorial();
+                procesarDatos();
+                historyList.scrollTop = historyList.scrollHeight;
+                if (navigator.vibrate) navigator.vibrate(15);
+                toastMsg(`✅ $${Math.round(monto).toLocaleString('es-CL')} · ${empresa}`);
+            }
+
+            // ─── modal cierre ──────────────────
+            function abrirModal() {
+                modalContent.innerHTML = `Se archivará el día de hoy (${diario.viajes.length} viajes) y se reiniciarán los contadores.`;
+                modalOverlay.style.display = 'flex';
+            }
+            function cerrarModal() { modalOverlay.style.display = 'none'; }
+
+            function archivarDia() {
+                if (diario.viajes.length > 0 || diario.turnoStart) {
+                    historial.push({ ...diario });
+                }
+                diario = { fecha: hoyStr(), viajes: [], nextId: diario.nextId || 1, turnoStart: null, turnoEnd: null };
+                btnTurno.textContent = '▶ Iniciar';
+                btnTurno.classList.remove('stop');
+                guardar();
+                renderHistorial();
+                procesarDatos();
+                cerrarModal();
+                toastMsg('📁 Día archivado. Nuevo día listo.');
+            }
+
+            // ─── toast ─────────────────────────
+            let toastTimer;
+            function toastMsg(msg) {
+                if (toastTimer) clearTimeout(toastTimer);
+                toast.textContent = msg;
+                toast.className = 'toast';
+                void toast.offsetWidth;
+                toast.classList.add('show');
+                toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+            }
+
+            // ─── eventos ───────────────────────
+            btnTurno.addEventListener('click', alternarTurno);
+            btnCorto.addEventListener('click', () => agregarViaje(VIAJE_CORTO));
+            btnRegistrar.addEventListener('click', () => {
+                const v = parseInt(inputMonto.value, 10);
+                if (isNaN(v) || v <= 0) { toastMsg('Monto inválido'); return; }
+                agregarViaje(v);
+                inputMonto.value = '';
+            });
+            inputMonto.addEventListener('keydown', e => { if (e.key === 'Enter') btnRegistrar.click(); });
+            btnCerrar.addEventListener('click', abrirModal);
+            btnCancelar.addEventListener('click', cerrarModal);
+            btnConfirmar.addEventListener('click', archivarDia);
+            modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) cerrarModal(); });
+
+            companyBtns.forEach(b => {
+                b.addEventListener('click', () => {
+                    const c = b.dataset.company;
+                    if (c !== empresa) {
+                        empresa = c;
+                        companyBtns.forEach(x => x.classList.toggle('active', x.dataset.company === c));
+                        guardar();
+                    }
+                });
+            });
+
+            // ─── inicialización ────────────────
+            function init() {
+                if (!cargar()) {
+                    diario = { fecha: hoyStr(), viajes: [], nextId: 1, turnoStart: null, turnoEnd: null };
+                    historial = [];
+                    empresa = 'Uber';
+                    guardar();
+                }
+                // Sincronizar UI empresa
+                companyBtns.forEach(b => b.classList.toggle('active', b.dataset.company === empresa));
+                // Ajustar turno UI
+                if (diario.turnoStart && !diario.turnoEnd) {
+                    btnTurno.textContent = '⏹ Finalizar';
+                    btnTurno.classList.add('stop');
+                } else {
+                    btnTurno.textContent = '▶ Iniciar';
+                    btnTurno.classList.remove('stop');
+                }
+                actualizarTimer();
+                renderHistorial();
+                procesarDatos();
+                fechaEl.textContent = new Date().toLocaleDateString('es-CL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+                setInterval(() => { actualizarTimer(); }, 1000);
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
