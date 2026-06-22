@@ -1,733 +1,1082 @@
-<!DOCTYPE html>
+como actualizo <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>JLNapp · Control Total de Ingresos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>JLNapp · Control de Ingresos</title>
+    
+    <!-- ========================================== -->
+    <!-- CONFIGURACIÓN PWA Y APP NATIVA             -->
+    <!-- ========================================== -->
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="JLNapp">
+    <!-- Ícono para cuando se guarde en la pantalla de inicio -->
+    <link rel="apple-touch-icon" href="https://api.iconify.design/lucide:gauge.svg?color=%234ade80&width=180&height=180">
+    <!-- ========================================== -->
+
+    <!-- Premium Typography: Satoshi -->
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,800,900&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
     <style>
         :root {
+            /* Superficies & Fondos (Dark-First) */
             --bg-deep: #0a0a0f;
-            --bg: #111115;
             --surface: #18181d;
             --surface-elevated: #1e1e24;
-            --border: #2a2a32;
-            --border-light: #383844;
-            --text-primary: #f0f0f6;
-            --text-secondary: #b0b0bb;
-            --text-muted: #6b6b78;
-            --accent: #4ade80;
-            --accent-glow: rgba(74, 222, 128, 0.25);
+            --surface-2: color-mix(in oklch, #18181d 80%, #2a2a32);
+            
+            /* Textos */
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+
+            /* Bordes Translucidos (Adaptables) */
+            --border: 1px solid oklch(from var(--text-primary) l c h / 0.10);
+            --border-hover: 1px solid oklch(from var(--text-primary) l c h / 0.20);
+
+            /* Acentos (Default, se sobreescribe por JS según país) */
+            --accent: #4ade80; 
             --accent2: #60a5fa;
-            --warning: #f59e0b;
+            
+            /* Derivados dinámicos generados via JS o color-mix */
+            --accent-dim: color-mix(in oklch, var(--accent) 15%, transparent);
+            --accent2-dim: color-mix(in oklch, var(--accent2) 12%, transparent);
+            --surface-accent: color-mix(in oklch, var(--accent) 6%, var(--surface));
+
+            /* Estados Generales */
             --danger: #ef4444;
-            --uber: #22c55e;
-            --didi: #f97316;
-            --indrive: #a855f7;
-            --radius-xl: 20px;
-            --radius-lg: 16px;
-            --radius-md: 12px;
+            --danger-dim: color-mix(in oklch, var(--danger) 10%, transparent);
+            --warning: #f59e0b;
+            --success: #10b981;
+
+            /* Empresas */
+            --uber: #06c167;
+            --didi: #ff7d00;
+            --indrive: #b2ff05;
+            --particular: #94a3b8;
+
+            /* Sombras Premium */
+            --shadow-card: 0 2px 8px oklch(0 0 0 / 0.30), 0 1px 2px oklch(0 0 0 / 0.20);
+            --shadow-btn: 0 4px 14px oklch(0 0 0 / 0.35);
+            --shadow-float: 0 8px 28px oklch(0 0 0 / 0.40);
+
+            /* Jerarquía de Radios */
+            --radius-xs: 8px;
             --radius-sm: 10px;
-            --shadow-sm: 0 2px 6px rgba(0,0,0,0.5);
-            --shadow-md: 0 6px 20px rgba(0,0,0,0.6);
-            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
-            --safe-bottom: env(safe-area-inset-bottom, 16px);
+            --radius-md: 14px;
+            --radius-lg: 16px;
+            --radius-pill: 9999px;
+
+            /* Tipografía */
+            --font-body: 'Satoshi', sans-serif;
         }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        html { -webkit-tap-highlight-color:transparent; -webkit-font-smoothing:antialiased; }
+
+        /* RESET & BASE */
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: var(--font-sans);
-            background: radial-gradient(ellipse at 50% 0%, rgba(74,222,128,0.03) 0%, transparent 60%) var(--bg-deep);
+            font-family: var(--font-body);
+            background-color: #000;
             color: var(--text-primary);
             display: flex;
             justify-content: center;
             min-height: 100vh;
-            min-height: 100dvh;
-            overflow-x: hidden;
-            letter-spacing: -0.01em;
         }
-        .app {
+        
+        .app-container {
             width: 100%;
             max-width: 480px;
-            padding: 16px 18px calc(16px + var(--safe-bottom)) 18px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
+            background-color: var(--bg-deep);
+            min-height: 100vh;
+            position: relative;
+            /* Padding para notch superior y barra inferior */
+            padding: env(safe-area-inset-top) 0 calc(80px + env(safe-area-inset-bottom)) 0;
+            overflow-x: hidden;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
         }
-        /* Header */
+
+        /* UTILIDADES */
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-sm { gap: 8px; }
+        .gap-md { gap: 12px; }
+        .gap-lg { gap: 16px; }
+        
+        /* HEADER */
         .header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-deep);
+            position: sticky;
+            top: env(safe-area-inset-top);
+            z-index: 10;
+            backdrop-filter: blur(12px);
+            border-bottom: var(--border);
+        }
+        .header-left {
             display: flex;
             align-items: center;
-            justify-content: space-between;
             gap: 12px;
         }
-        .brand { display: flex; align-items: center; gap: 10px; }
-        .logo {
-            width: 44px; height: 44px; border-radius: 13px;
-            background: linear-gradient(135deg, #22c55e, #4ade80, #60a5fa);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; box-shadow: 0 6px 20px rgba(34,197,94,0.35);
+        .logo-box {
+            width: 44px;
+            height: 44px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            border-radius: var(--radius-xs);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
         }
-        .app-name { font-size: 1.15rem; font-weight: 750; color: #fff; }
-        .app-date { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; }
+        .logo-box svg { width: 24px; height: 24px; }
+        .app-title {
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+        .app-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .header-actions { display: flex; gap: 8px; }
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--radius-pill);
+            background: var(--surface-2);
+            border: var(--border);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .icon-btn:active { transform: scale(0.92); }
+        .icon-btn i { width: 18px; height: 18px; }
+
+        /* STATUS PILL (Delight) */
         .status-pill {
-            display: flex; align-items: center; gap: 6px;
-            background: rgba(30,30,36,0.8); backdrop-filter: blur(10px);
-            border: 1px solid var(--border); padding: 8px 14px;
-            border-radius: 20px; font-size: 0.72rem; font-weight: 600;
-            color: var(--accent); letter-spacing: 0.3px;
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            border: 2px solid var(--bg-deep);
         }
-        .status-dot {
-            width: 7px; height: 7px; border-radius: 50%;
-            background: var(--accent);
-            box-shadow: 0 0 10px var(--accent-glow);
+        .status-pill::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: var(--accent);
+            border-radius: 50%;
             animation: pulse 2s infinite;
         }
-        @keyframes pulse { 50% { box-shadow: 0 0 18px rgba(74,222,128,0.6); } }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            70% { transform: scale(2.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 0; }
+        }
 
-        /* Turno card */
+        /* SECTION PADDING */
+        .section { padding: 0 20px 24px 20px; }
+        .section-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        /* TURNO CARD */
         .turno-card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius-lg); padding: 14px 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: var(--shadow-sm); gap: 12px;
+            background: var(--surface);
+            border: var(--border);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-card);
+            margin: 20px;
         }
-        .turno-left { display: flex; align-items: center; gap: 12px; }
-        .turno-icon {
-            font-size: 1.8rem; width: 44px; height: 44px;
-            border-radius: 50%; background: rgba(96,165,250,0.1);
-            display: flex; align-items: center; justify-content: center;
+        .timer-display {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
         }
-        .turno-info { display: flex; flex-direction: column; }
-        .turno-label { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); letter-spacing: 0.8px; }
-        .turno-time { font-size: 1.25rem; font-weight: 800; font-family: var(--font-mono); color: #fff; }
+        .timer-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
         .btn-turno {
-            padding: 12px 18px; border-radius: 24px; border: none;
-            font-weight: 700; font-size: 0.85rem; cursor: pointer;
-            transition: all var(--transition); letter-spacing: -0.2px;
-            color: #fff; background: var(--accent2); box-shadow: 0 4px 14px rgba(96,165,250,0.3);
-            white-space: nowrap; display: flex; align-items: center; gap: 6px;
+            padding: 12px 24px;
+            border-radius: var(--radius-pill);
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+        }
+        .btn-turno.inactive {
+            background: var(--accent2-dim);
+            color: var(--accent2);
+            border: 1px solid color-mix(in oklch, var(--accent2) 30%, transparent);
+        }
+        .btn-turno.active {
+            background: var(--danger);
+            color: #fff;
+            box-shadow: var(--shadow-btn);
         }
         .btn-turno:active { transform: scale(0.95); }
-        .btn-turno.stop { background: var(--danger); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
 
-        /* Métricas principales */
-        .metrics-row {
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+        /* METRICAS (Bruto, Gastos, Liquido) */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
         }
         .metric-card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius-lg); padding: 14px 10px;
-            text-align: center; display: flex; flex-direction: column; gap: 4px;
-            box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+            background: var(--surface);
+            border: var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px 12px;
+            text-align: center;
+            box-shadow: var(--shadow-card);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .metric-card::before {
-            content: ''; position: absolute; top:0; left:0; right:0; height: 3px;
+        .metric-card.bounce {
+            transform: scale(1.08);
+            border-color: var(--accent);
         }
-        .metric-card.trips::before { background: #60a5fa; box-shadow: 0 0 10px rgba(96,165,250,0.3); }
-        .metric-card.gross::before { background: #4ade80; box-shadow: 0 0 10px rgba(74,222,128,0.3); }
-        .metric-card.net::before { background: #f59e0b; box-shadow: 0 0 10px rgba(245,158,11,0.3); }
-        .metric-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); }
-        .metric-value { font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: #fff; }
-        .metric-value.negative { color: #f87171; } .metric-value.positive { color: #4ade80; }
-        .metric-sub { font-size: 0.58rem; color: var(--text-muted); }
+        .metric-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+        .metric-card.liquido {
+            background: var(--surface-elevated);
+        }
+        .metric-card.liquido.negative {
+            background: color-mix(in oklch, var(--danger) 8%, var(--surface));
+            border-color: color-mix(in oklch, var(--danger) 30%, transparent);
+        }
+        .metric-card.liquido.negative .metric-value {
+            color: var(--danger);
+        }
 
-        /* Resumen semanal/mensual */
-        .summary-row {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        /* COSTOS (2 filas x 3 columnas) */
+        .costs-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 6px;
         }
-        .summary-card {
-            background: var(--surface-elevated); border: 1px solid var(--border);
-            border-radius: var(--radius-md); padding: 12px 14px;
-            box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 6px;
+        .cost-card {
+            background: var(--surface-2);
+            border: var(--border);
+            border-radius: var(--radius-xs);
+            padding: 10px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .summary-header { display: flex; justify-content: space-between; align-items: center; }
-        .summary-title { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
-        .summary-period { font-size: 0.6rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 8px; }
-        .summary-values { display: flex; justify-content: space-between; }
-        .summary-item { text-align: center; }
-        .summary-item span:first-child { font-size: 0.6rem; color: var(--text-muted); display: block; }
-        .summary-item span:last-child { font-weight: 700; font-size: 0.9rem; color: #fff; font-family: var(--font-mono); }
+        .cost-card:active { transform: scale(0.95); background: var(--surface-elevated); }
+        .cost-icon { margin-bottom: 4px; color: var(--text-secondary); width: 16px; height: 16px; }
+        .cost-label { font-size: 0.65rem; color: var(--text-secondary); font-weight: 600; text-align: center; margin-bottom: 2px;}
+        .cost-value { font-size: 0.8rem; font-weight: 700; color: var(--danger); }
 
-        /* Empresa */
-        .company-row { display: flex; gap: 7px; }
+        /* SELECTOR DE EMPRESA */
+        .company-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
         .company-btn {
-            flex:1; padding:13px 6px; border-radius: var(--radius-md);
-            border:2px solid var(--border); background:var(--surface);
-            color:var(--text-secondary); font-weight:700; font-size:0.8rem;
-            display:flex; align-items:center; justify-content:center; gap:6px;
-            cursor:pointer; transition:all var(--transition); min-height:48px;
-            box-shadow:var(--shadow-sm);
+            background: var(--surface);
+            border: 1px solid oklch(from var(--text-primary) l c h / 0.10);
+            border-radius: var(--radius-md);
+            padding: 12px 0;
+            color: var(--text-secondary);
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-card);
         }
-        .company-btn.active { color:#fff; border-color:transparent; transform:translateY(-1px); }
-        .company-btn.uber.active { background:linear-gradient(135deg,#166534,#22c55e); box-shadow:0 6px 18px rgba(34,197,94,0.4); }
-        .company-btn.didi.active { background:linear-gradient(135deg,#9a3412,#f97316); box-shadow:0 6px 18px rgba(249,115,22,0.4); }
-        .company-btn.indrive.active { background:linear-gradient(135deg,#6b21a8,#a855f7); box-shadow:0 6px 18px rgba(168,85,247,0.4); }
+        .company-btn:active { transform: scale(0.95); }
+        
+        /* Estados Activos Empresas */
+        .company-btn.active.uber { 
+            border: 1.5px solid var(--uber); 
+            background: color-mix(in oklch, var(--uber) 8%, var(--surface)); 
+            color: var(--text-primary);
+        }
+        .company-btn.active.didi { 
+            border: 1.5px solid var(--didi); 
+            background: color-mix(in oklch, var(--didi) 8%, var(--surface)); 
+            color: var(--text-primary);
+        }
+        .company-btn.active.indrive { 
+            border: 1.5px solid var(--indrive); 
+            background: color-mix(in oklch, var(--indrive) 8%, var(--surface)); 
+            color: var(--text-primary);
+        }
+        .company-btn.active.particular { 
+            border: 1.5px solid var(--particular); 
+            background: #334155; 
+            color: var(--text-primary);
+        }
 
-        /* Totales por app */
-        .app-totals {
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
-            margin-top: 2px;
+        /* BOTONES RAPIDOS */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .btn-quick {
+            background: var(--accent2);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 14px 4px;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-btn);
+            transition: transform 0.2s;
+        }
+        .btn-quick:active { transform: scale(0.94); }
+        .btn-quick.special {
+            background: var(--accent); /* Especial verde */
+        }
+
+        /* INPUT SHELL */
+        .input-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding-left: 4px;
+        }
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+        .custom-input {
+            flex: 1;
+            background: var(--surface);
+            border: 2px solid oklch(from var(--text-primary) l c h / 0.12);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-weight: 700;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .custom-input:focus {
+            border-color: var(--accent2);
+            box-shadow: 0 0 0 3px var(--accent2-dim);
+        }
+        .custom-input::placeholder { color: var(--text-muted); font-weight: 500; }
+        
+        .btn-submit {
+            background: var(--warning);
+            color: #000;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 0 20px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-btn);
+            transition: transform 0.2s;
+        }
+        .btn-submit:active { transform: scale(0.95); }
+
+        /* TOTALES POR APP */
+        .app-totals-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
         }
         .app-total-card {
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); padding: 10px 6px;
-            text-align: center; box-shadow: var(--shadow-sm);
-            display: flex; flex-direction: column; gap: 2px;
+            background: var(--surface-2);
+            border: var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
-        .app-total-label {
-            font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.5px; color: var(--text-muted);
+        .company-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-bottom: 6px;
+        }
+        .dot-uber { background: var(--uber); }
+        .dot-didi { background: var(--didi); }
+        .dot-indrive { background: var(--indrive); }
+        .dot-particular { background: var(--particular); }
+        
+        .app-total-name {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 2px;
         }
         .app-total-value {
-            font-size: 0.85rem; font-weight: 700; font-family: var(--font-mono);
-            color: #fff;
-        }
-        .app-total-card.uber .app-total-value { color: #4ade80; }
-        .app-total-card.didi .app-total-value { color: #f97316; }
-        .app-total-card.indrive .app-total-value { color: #c084fc; }
-
-        /* Acciones */
-        .actions-block { display: flex; flex-direction: column; gap: 10px; }
-        .btn {
-            display:flex; align-items:center; justify-content:center; gap:8px;
-            width:100%; padding:17px 22px; border:none; border-radius:var(--radius-lg);
-            font-size:1rem; font-weight:700; cursor:pointer; transition:all var(--transition);
-            min-height:56px; color:#fff; position:relative; overflow:hidden;
-            box-shadow: var(--shadow-md);
-        }
-        .btn:active { transform:scale(0.96); }
-        .btn-short { background:linear-gradient(135deg,#166534,#22c55e,#4ade80); box-shadow:0 6px 24px rgba(34,197,94,0.4); font-size:1.05rem; }
-        .input-row { display:flex; gap:8px; }
-        .input-shell {
-            flex:1; display:flex; align-items:center; background:var(--surface);
-            border:2px solid var(--border); border-radius:var(--radius-lg);
-            padding:0 16px; box-shadow:var(--shadow-sm); gap:8px;
-            transition:border-color var(--transition);
-        }
-        .input-shell:focus-within { border-color:#f59e0b; box-shadow:0 0 0 4px rgba(245,158,11,0.12); }
-        .input-prefix { font-weight:800; color:var(--text-secondary); font-size:1.1rem; }
-        .input-shell input {
-            flex:1; background:transparent; border:none; outline:none;
-            font-size:1.2rem; font-weight:600; color:#fff; padding:16px 0;
-            font-family:var(--font-mono); caret-color:#f59e0b;
-        }
-        .input-shell input::placeholder { color:var(--text-muted); font-family:var(--font-sans); font-size:0.9rem; }
-        .btn-go {
-            padding:0 22px; border-radius:var(--radius-lg);
-            background:linear-gradient(135deg,#b45309,#f59e0b); border:none;
-            color:#fff; font-weight:700; font-size:0.9rem; cursor:pointer;
-            box-shadow:0 6px 20px rgba(245,158,11,0.35); min-height:56px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-primary);
         }
 
-        /* Historial */
-        .history-section { flex:1; display:flex; flex-direction:column; gap:8px; min-height:100px; }
-        .history-top { display:flex; justify-content:space-between; align-items:center; }
-        .history-label { font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); }
-        .history-badge { font-size:0.68rem; font-weight:700; color:var(--text-secondary); background:var(--surface-elevated); padding:4px 10px; border-radius:12px; border:1px solid var(--border); }
-        .history-list { list-style:none; display:flex; flex-direction:column; gap:5px; max-height:280px; overflow-y:auto; padding-right:3px; }
+        /* HISTORIAL */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
         .history-item {
-            display:flex; align-items:center; justify-content:space-between;
-            background:var(--surface); border:1px solid var(--border);
-            border-radius:var(--radius-md); padding:12px 14px; gap:8px;
-            animation: slideIn 0.3s ease;
+            background: var(--surface);
+            border: var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideUpIn 0.3s ease forwards;
+            opacity: 0;
+            transform: translateY(8px);
         }
-        @keyframes slideIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
-        .history-item.removing { animation:slideOut 0.25s ease forwards; }
-        @keyframes slideOut { to { opacity:0; transform:translateX(60px); max-height:0; padding:0; margin:0; } }
-        .item-info { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
-        .item-num { font-size:0.65rem; font-weight:700; color:var(--text-muted); background:var(--surface-elevated); width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
-        .item-meta { display:flex; flex-direction:column; }
-        .item-amount { font-weight:700; font-size:0.95rem; color:#fff; font-family:var(--font-mono); }
-        .item-time { font-size:0.6rem; color:var(--text-muted); }
-        .item-tag { font-size:0.65rem; font-weight:700; padding:2px 8px; border-radius:8px; }
-        .tag-uber { color:#22c55e; background:rgba(34,197,94,0.12); }
-        .tag-didi { color:#f97316; background:rgba(249,115,22,0.12); }
-        .tag-indrive { color:#c084fc; background:rgba(168,85,247,0.12); }
-        .btn-del {
-            width:32px; height:32px; border-radius:50%; background:rgba(239,68,68,0.1);
-            border:1px solid rgba(239,68,68,0.2); color:#ef4444; font-size:1rem;
-            display:flex; align-items:center; justify-content:center; cursor:pointer;
+        @keyframes slideUpIn {
+            to { opacity: 1; transform: translateY(0); }
         }
-        .btn-del:active { background:#ef4444; color:#fff; }
+        .history-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .history-item-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .history-item-desc {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .history-item-val {
+            font-weight: 800;
+            font-size: 1rem;
+        }
+        .history-item-val.positive { color: var(--accent); }
+        .history-item-val.negative { color: var(--danger); }
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .empty-state i { width: 32px; height: 32px; opacity: 0.5; }
 
-        /* Cerrar día */
-        .footer-area { padding-top:4px; }
-        .btn-end-day {
-            width:100%; padding:16px; border-radius:var(--radius-lg);
-            background:linear-gradient(135deg,#7f1d1d,#dc2626); border:none;
-            color:#fff; font-weight:700; font-size:0.9rem; cursor:pointer;
-            box-shadow:0 6px 20px rgba(239,68,68,0.35); min-height:52px;
-        }
-
-        /* Modal */
+        /* MODALES */
         .modal-overlay {
-            position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:100;
-            display:flex; align-items:center; justify-content:center; padding:20px;
-            backdrop-filter:blur(4px);
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            padding: 20px;
         }
-        .modal-dialog {
-            background:var(--surface-elevated); border:1px solid var(--border-light);
-            border-radius:var(--radius-xl); padding:24px; width:100%; max-width:360px;
-            text-align:center; display:flex; flex-direction:column; gap:16px;
-            animation: scaleUp 0.3s ease;
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
         }
-        @keyframes scaleUp { from { transform:scale(0.85); opacity:0; } to { transform:scale(1); opacity:1; } }
-        .modal-title { font-size:1.2rem; font-weight:800; }
-        .modal-text { font-size:0.85rem; color:var(--text-secondary); line-height:1.5; }
-        .modal-buttons { display:flex; gap:8px; }
-        .btn-cancel { background:var(--surface); border:2px solid var(--border); color:#fff; }
-        .btn-confirm { background:#ef4444; }
+        .modal-content {
+            background: var(--surface);
+            border: var(--border);
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            box-shadow: 0 24px 60px oklch(0 0 0 / 0.6);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-title { font-size: 1.2rem; font-weight: 800; }
+        .close-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; }
+        
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .theme-btn {
+            background: var(--surface-2);
+            border: var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .theme-btn.active {
+            border-color: var(--accent);
+            background: var(--surface-accent);
+        }
 
-        /* Toast */
-        .toast {
-            position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-120px);
-            background:var(--surface-elevated); border:1px solid var(--border-light);
-            color:#fff; padding:12px 22px; border-radius:24px; font-weight:600;
-            font-size:0.85rem; z-index:200; box-shadow:0 12px 30px rgba(0,0,0,0.6);
-            transition:transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events:none; backdrop-filter:blur(12px);
+        /* TOAST */
+        .toast-container {
+            position: fixed;
+            bottom: max(24px, env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 90%;
+            max-width: 400px;
         }
-        .toast.show { transform:translateX(-50%) translateY(0); }
+        .toast {
+            background: color-mix(in oklch, var(--surface-elevated) 90%, transparent);
+            backdrop-filter: blur(8px);
+            border: 1px solid oklch(from var(--text-primary) l c h / 0.12);
+            color: var(--text-primary);
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow-float);
+            animation: toastEnter 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .toast.toast-success i { color: var(--success); }
+        .toast.toast-error i { color: var(--danger); }
+        
+        @keyframes toastEnter {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes toastExit {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+
     </style>
 </head>
 <body>
-    <div class="app">
-        <header class="header">
-            <div class="brand">
-                <div class="logo">🚘</div>
-                <div>
-                    <div class="app-name">JLNapp</div>
-                    <div class="app-date" id="fechaActual"></div>
-                </div>
-            </div>
-            <div class="status-pill"><span class="status-dot"></span> En turno</div>
-        </header>
 
-        <!-- Turno -->
-        <div class="turno-card" id="turnoCard">
-            <div class="turno-left">
-                <div class="turno-icon">⏱️</div>
-                <div class="turno-info">
-                    <span class="turno-label">Tiempo trabajado hoy</span>
-                    <span class="turno-time" id="turnoTimer">00:00:00</span>
-                </div>
+<div class="app-container" id="app">
+    
+    <!-- HEADER -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo-box">
+                <!-- SVG Geométrico / Minimalista (Velocímetro abstracto) -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20v-6M6 14l2-2M18 14l-2-2M12 4a8 8 0 0 0-8 8M20 12a8 8 0 0 0-8-8"/>
+                </svg>
             </div>
-            <button class="btn-turno" id="btnTurno">▶ Iniciar</button>
-        </div>
-
-        <!-- Métricas hoy -->
-        <div class="metrics-row" id="metricsRow">
-            <div class="metric-card trips"><span class="metric-label">Viajes</span><span class="metric-value" id="viajesHoy">0</span><span class="metric-sub">hoy</span></div>
-            <div class="metric-card gross"><span class="metric-label">Bruto</span><span class="metric-value" id="brutoHoy">$0</span><span class="metric-sub">hoy</span></div>
-            <div class="metric-card net"><span class="metric-label">Líquido</span><span class="metric-value negative" id="liquidoHoy">-$30.714</span><span class="metric-sub">hoy</span></div>
-        </div>
-
-        <!-- Resumen semana / mes -->
-        <div class="summary-row">
-            <div class="summary-card" id="semanaCard">
-                <div class="summary-header"><span class="summary-title">📅 Semana</span><span class="summary-period" id="semanaRango"></span></div>
-                <div class="summary-values">
-                    <div class="summary-item"><span>Bruto</span><span id="semanaBruto">$0</span></div>
-                    <div class="summary-item"><span>Líquido</span><span id="semanaLiquido">-$30.714</span></div>
-                    <div class="summary-item"><span>Horas</span><span id="semanaHoras">0h</span></div>
-                </div>
-            </div>
-            <div class="summary-card" id="mesCard">
-                <div class="summary-header"><span class="summary-title">🗓️ Mes</span><span class="summary-period" id="mesRango"></span></div>
-                <div class="summary-values">
-                    <div class="summary-item"><span>Bruto</span><span id="mesBruto">$0</span></div>
-                    <div class="summary-item"><span>Líquido</span><span id="mesLiquido">-$30.714</span></div>
-                    <div class="summary-item"><span>Horas</span><span id="mesHoras">0h</span></div>
-                </div>
+            <div>
+                <h1 class="app-title">JLNapp</h1>
+                <div class="app-date" id="currentDate">Cargando...</div>
             </div>
         </div>
-
-        <!-- Empresa -->
-        <div class="company-row">
-            <button class="company-btn uber active" data-company="Uber">🚗 Uber</button>
-            <button class="company-btn didi" data-company="Didi">🚕 Didi</button>
-            <button class="company-btn indrive" data-company="InDrive">🛺 InDrive</button>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="openThemeModal()" aria-label="Temas">
+                <i data-lucide="palette"></i>
+            </button>
+            <button class="icon-btn" aria-label="Ajustes">
+                <i data-lucide="settings"></i>
+                <div class="status-pill"></div>
+            </button>
         </div>
+    </header>
 
-        <!-- Totales por App -->
-        <div class="app-totals">
-            <div class="app-total-card uber">
-                <span class="app-total-label">Uber</span>
-                <span class="app-total-value" id="totalUber">$0</span>
-            </div>
-            <div class="app-total-card didi">
-                <span class="app-total-label">Didi</span>
-                <span class="app-total-value" id="totalDidi">$0</span>
-            </div>
-            <div class="app-total-card indrive">
-                <span class="app-total-label">InDrive</span>
-                <span class="app-total-value" id="totalIndrive">$0</span>
-            </div>
+    <!-- TARJETA TURNO -->
+    <div class="turno-card">
+        <div>
+            <div class="timer-label">TIEMPO EN RUTA</div>
+            <div class="timer-display tabular-nums" id="shiftTimer">00:00:00</div>
         </div>
-
-        <!-- Acciones -->
-        <div class="actions-block">
-            <button class="btn btn-short" id="btnViajeCorto">➕ Viaje Corto ($2.800)</button>
-            <div class="input-row">
-                <div class="input-shell">
-                    <span class="input-prefix">$</span>
-                    <input type="number" id="inputMonto" inputmode="numeric" placeholder="Monto personalizado" min="100" step="100">
-                </div>
-                <button class="btn-go" id="btnRegistrar">Registrar</button>
-            </div>
-        </div>
-
-        <!-- Historial -->
-        <div class="history-section">
-            <div class="history-top">
-                <span class="history-label">📋 Historial de hoy</span>
-                <span class="history-badge" id="historyCount">0 viajes</span>
-            </div>
-            <ul class="history-list" id="historyList"></ul>
-        </div>
-
-        <footer class="footer-area">
-            <button class="btn-end-day" id="btnCerrarDia">🔴 Cerrar Día / Archivar</button>
-        </footer>
+        <button class="btn-turno inactive" id="btnToggleShift" onclick="toggleShift()">
+            Iniciar Turno
+        </button>
     </div>
 
-    <!-- Modal cierre -->
-    <div class="modal-overlay" id="modalOverlay" style="display:none;">
-        <div class="modal-dialog">
-            <h2 class="modal-title">¿Cerrar jornada?</h2>
-            <p class="modal-text" id="modalContent">Se archivará el día de hoy y se reiniciarán los contadores.</p>
-            <div class="modal-buttons">
-                <button class="btn btn-cancel" id="btnCancelar">Cancelar</button>
-                <button class="btn btn-confirm" id="btnConfirmar">Archivar</button>
+    <!-- METRICAS PRINCIPALES -->
+    <section class="section">
+        <div class="metrics-grid">
+            <div class="metric-card" id="cardBruto">
+                <div class="metric-label">Bruto Hoy</div>
+                <div class="metric-value tabular-nums" id="valBruto">$0</div>
+            </div>
+            <div class="metric-card" id="cardGastos">
+                <div class="metric-label">Gastos</div>
+                <div class="metric-value tabular-nums" style="color: var(--danger)" id="valGastos">$0</div>
+            </div>
+            <div class="metric-card liquido" id="cardLiquido">
+                <div class="metric-label">Líquido</div>
+                <div class="metric-value tabular-nums" id="valLiquido">$0</div>
             </div>
         </div>
+    </section>
+
+    <!-- COSTOS RÁPIDOS -->
+    <section class="section">
+        <div class="section-label">Registro de Gastos</div>
+        <div class="costs-grid">
+            <div class="cost-card" onclick="addCost('Bencina')">
+                <i data-lucide="fuel" class="cost-icon"></i>
+                <span class="cost-label">Bencina</span>
+            </div>
+            <div class="cost-card" onclick="addCost('Comida')">
+                <i data-lucide="utensils" class="cost-icon"></i>
+                <span class="cost-label">Comida</span>
+            </div>
+            <div class="cost-card" onclick="addCost('Lavado')">
+                <i data-lucide="droplets" class="cost-icon"></i>
+                <span class="cost-label">Lavado</span>
+            </div>
+            <div class="cost-card" onclick="addCost('Peaje')">
+                <i data-lucide="ticket" class="cost-icon"></i>
+                <span class="cost-label">Peaje/Tag</span>
+            </div>
+            <div class="cost-card" onclick="addCost('Parking')">
+                <i data-lucide="circle-parking" class="cost-icon"></i>
+                <span class="cost-label">Estac.</span>
+            </div>
+            <div class="cost-card" onclick="addCost('Otros')">
+                <i data-lucide="plus-circle" class="cost-icon"></i>
+                <span class="cost-label">Otros</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- INGRESO DE VIAJES -->
+    <section class="section">
+        <div class="section-label">Registrar Viaje</div>
+        
+        <!-- Apps -->
+        <div class="company-selector">
+            <button class="company-btn active uber" id="btnUber" onclick="selectCompany('uber')">Uber</button>
+            <button class="company-btn didi" id="btnDidi" onclick="selectCompany('didi')">DiDi</button>
+            <button class="company-btn indrive" id="btnIndrive" onclick="selectCompany('indrive')">InDrive</button>
+            <button class="company-btn particular" id="btnParticular" onclick="selectCompany('particular')">Partic.</button>
+        </div>
+
+        <!-- Quick Add -->
+        <div class="quick-actions">
+            <button class="btn-quick tabular-nums" onclick="addIncome(1500)">$1.500</button>
+            <button class="btn-quick tabular-nums" onclick="addIncome(2000)">$2.000</button>
+            <button class="btn-quick special tabular-nums" onclick="addIncome(2800)">$2.800</button>
+            <button class="btn-quick tabular-nums" onclick="addIncome(3500)">$3.500</button>
+        </div>
+
+        <!-- Custom Add -->
+        <div class="input-shell">
+            <label for="inputCustom" class="input-label">Monto personalizado</label>
+            <div class="input-group">
+                <input type="number" id="inputCustom" class="custom-input tabular-nums" placeholder="$0" pattern="[0-9]*" inputmode="numeric">
+                <button class="btn-submit" onclick="addCustomIncome()">
+                    <i data-lucide="check"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- TOTALES POR APP -->
+    <section class="section">
+        <div class="section-label">Desglose por App</div>
+        <div class="app-totals-container">
+            <div class="app-total-card">
+                <div class="company-dot dot-uber"></div>
+                <div class="app-total-name">Uber</div>
+                <div class="app-total-value tabular-nums" id="totalUber">$0</div>
+            </div>
+            <div class="app-total-card">
+                <div class="company-dot dot-didi"></div>
+                <div class="app-total-name">DiDi</div>
+                <div class="app-total-value tabular-nums" id="totalDidi">$0</div>
+            </div>
+            <div class="app-total-card">
+                <div class="company-dot dot-indrive"></div>
+                <div class="app-total-name">InDrive</div>
+                <div class="app-total-value tabular-nums" id="totalIndrive">$0</div>
+            </div>
+            <div class="app-total-card">
+                <div class="company-dot dot-particular"></div>
+                <div class="app-total-name">Partic.</div>
+                <div class="app-total-value tabular-nums" id="totalParticular">$0</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section class="section">
+        <div class="section-label">Historial Reciente</div>
+        <div class="history-list" id="historyList">
+            <div class="empty-state">
+                <i data-lucide="inbox"></i>
+                <span>Sin registros hoy. ¡Inicia tu turno!</span>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- MODAL DE TEMAS -->
+<div class="modal-overlay" id="themeModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title">Tema & País</h2>
+            <button class="close-btn" onclick="closeThemeModal()">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="theme-grid">
+            <!-- dataset attributes are crucial for the theme selector to highlight the active state -->
+            <button class="theme-btn active" data-theme="chile" onclick="setTheme('chile')">🇨🇱 Chile</button>
+            <button class="theme-btn" data-theme="venezuela" onclick="setTheme('venezuela')">🇻🇪 Venezuela</button>
+            <button class="theme-btn" data-theme="colombia" onclick="setTheme('colombia')">🇨🇴 Colombia</button>
+            <button class="theme-btn" data-theme="argentina" onclick="setTheme('argentina')">🇦🇷 Argentina</button>
+            <button class="theme-btn" data-theme="default" onclick="setTheme('default')" style="grid-column: span 2;">🏳️ Default JLN</button>
+        </div>
     </div>
+</div>
 
-    <div class="toast" id="toast"></div>
+<script>
+    // Inicializar Iconos Lucide
+    lucide.createIcons();
 
-    <script>
-        (() => {
-            const STORAGE = 'jlnApp_v4';
-            const GASTOS = 15714 + 15000;
-            const VIAJE_CORTO = 2800;
+    // ==========================================
+    // ESTADO DE LA APP
+    // ==========================================
+    const state = {
+        currentCompany: 'uber',
+        bruto: 0,
+        gastos: 0,
+        liquido: 0,
+        totals: { uber: 0, didi: 0, indrive: 0, particular: 0 },
+        history: [],
+        shift: { active: false, startTime: null, seconds: 0, timerId: null }
+    };
 
-            // DOM
-            const fechaEl = document.getElementById('fechaActual');
-            const turnoTimer = document.getElementById('turnoTimer');
-            const btnTurno = document.getElementById('btnTurno');
-            const viajesHoy = document.getElementById('viajesHoy');
-            const brutoHoy = document.getElementById('brutoHoy');
-            const liquidoHoy = document.getElementById('liquidoHoy');
-            const semanaRango = document.getElementById('semanaRango');
-            const semanaBruto = document.getElementById('semanaBruto');
-            const semanaLiquido = document.getElementById('semanaLiquido');
-            const semanaHoras = document.getElementById('semanaHoras');
-            const mesRango = document.getElementById('mesRango');
-            const mesBruto = document.getElementById('mesBruto');
-            const mesLiquido = document.getElementById('mesLiquido');
-            const mesHoras = document.getElementById('mesHoras');
-            const totalUber = document.getElementById('totalUber');
-            const totalDidi = document.getElementById('totalDidi');
-            const totalIndrive = document.getElementById('totalIndrive');
-            const historyList = document.getElementById('historyList');
-            const historyCount = document.getElementById('historyCount');
-            const btnCorto = document.getElementById('btnViajeCorto');
-            const inputMonto = document.getElementById('inputMonto');
-            const btnRegistrar = document.getElementById('btnRegistrar');
-            const btnCerrar = document.getElementById('btnCerrarDia');
-            const modalOverlay = document.getElementById('modalOverlay');
-            const modalContent = document.getElementById('modalContent');
-            const btnCancelar = document.getElementById('btnCancelar');
-            const btnConfirmar = document.getElementById('btnConfirmar');
-            const toast = document.getElementById('toast');
-            const companyBtns = document.querySelectorAll('.company-btn');
+    // TEMAS (Actualizados para modo oscuro)
+    const themes = {
+        chile:     { name: 'Chile', accent: '#e63a2a', accent2: '#2563eb' }, // Rojo ajustado para contraste
+        venezuela: { name: 'Venezuela', accent: '#ffcc00', accent2: '#cf142b' },
+        colombia:  { name: 'Colombia', accent: '#fcd116', accent2: '#003893' },
+        argentina: { name: 'Argentina', accent: '#74acdf', accent2: '#f6b40e' },
+        default:   { name: 'Default', accent: '#4ade80', accent2: '#60a5fa' }
+    };
 
-            // Estado
-            let diario = { fecha: '', viajes: [], nextId: 1, turnoStart: null, turnoEnd: null };
-            let empresa = 'Uber';
-            let historial = [];
+    // Formateador de moneda (CLP standard)
+    const formatMoney = (amount) => {
+        return '$' + Math.abs(amount).toLocaleString('es-CL');
+    };
 
-            function guardar() {
-                localStorage.setItem(STORAGE, JSON.stringify({ diario, historial, empresa }));
+    // ==========================================
+    // INICIALIZACIÓN
+    // ==========================================
+    window.onload = () => {
+        // Fecha actual
+        const options = { weekday: 'long', day: 'numeric', month: 'short' };
+        let dateStr = new Date().toLocaleDateString('es-CL', options);
+        document.getElementById('currentDate').innerText = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+        
+        // Tema inicial
+        setTheme('chile');
+        updateUI();
+    };
+
+    // ==========================================
+    // FUNCIONES PRINCIPALES
+    // ==========================================
+
+    function selectCompany(company) {
+        state.currentCompany = company;
+        document.querySelectorAll('.company-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('btn' + company.charAt(0).toUpperCase() + company.slice(1)).classList.add('active');
+    }
+
+    function addIncome(amount) {
+        state.bruto += amount;
+        state.totals[state.currentCompany] += amount;
+        addToHistory('Ingreso', amount, state.currentCompany);
+        recalculate();
+        triggerBounce('cardBruto');
+        showToast(`Viaje registrado: ${formatMoney(amount)}`, 'success');
+    }
+
+    function addCustomIncome() {
+        const input = document.getElementById('inputCustom');
+        const amount = parseInt(input.value);
+        if (amount > 0) {
+            addIncome(amount);
+            input.value = '';
+            input.blur();
+        } else {
+            showToast('Ingresa un monto válido', 'error');
+        }
+    }
+
+    function addCost(type) {
+        // Prompt para simular el registro rápido de gasto
+        const costAmount = prompt(`Ingresa el monto para: ${type}`);
+        const parsed = parseInt(costAmount);
+        if (parsed > 0) {
+            state.gastos += parsed;
+            addToHistory(type, parsed, 'gasto');
+            recalculate();
+            triggerBounce('cardGastos');
+            showToast(`Gasto registrado: ${formatMoney(parsed)}`, 'success');
+        }
+    }
+
+    function recalculate() {
+        state.liquido = state.bruto - state.gastos;
+        updateUI();
+    }
+
+    function addToHistory(title, amount, type) {
+        const item = { id: Date.now(), title, amount, type, time: new Date().toLocaleTimeString('es-CL', {hour: '2-digit', minute:'2-digit'}) };
+        state.history.unshift(item); // Add to beginning
+        if(state.history.length > 15) state.history.pop();
+        renderHistory();
+    }
+
+    function updateUI() {
+        // Metricas Principales
+        document.getElementById('valBruto').innerText = formatMoney(state.bruto);
+        document.getElementById('valGastos').innerText = formatMoney(state.gastos);
+        
+        const cardLiquido = document.getElementById('cardLiquido');
+        const valLiquido = document.getElementById('valLiquido');
+        
+        if(state.liquido < 0) {
+            valLiquido.innerText = '-' + formatMoney(state.liquido);
+            cardLiquido.classList.add('negative');
+        } else {
+            valLiquido.innerText = formatMoney(state.liquido);
+            cardLiquido.classList.remove('negative');
+        }
+
+        // Totales App
+        Object.keys(state.totals).forEach(app => {
+            document.getElementById(`total${app.charAt(0).toUpperCase() + app.slice(1)}`).innerText = formatMoney(state.totals[app]);
+        });
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('historyList');
+        if (state.history.length === 0) return;
+        
+        list.innerHTML = '';
+        state.history.forEach((item, index) => {
+            const isGasto = item.type === 'gasto';
+            const sign = isGasto ? '-' : '+';
+            const colorClass = isGasto ? 'negative' : 'positive';
+            const delay = index === 0 ? '0s' : '0s'; // Animación solo para el primero al insertarse
+            
+            // Determinar color de la bolita si es viaje
+            let dotHtml = '';
+            if(!isGasto) {
+                dotHtml = `<div class="company-dot dot-${item.type}" style="margin:0; width: 10px; height: 10px;"></div>`;
+            } else {
+                dotHtml = `<i data-lucide="receipt" style="width:14px; height:14px; color:var(--text-secondary)"></i>`;
             }
 
-            function cargar() {
-                const raw = localStorage.getItem(STORAGE);
-                if (!raw) return false;
-                try {
-                    const d = JSON.parse(raw);
-                    if (d.diario) diario = d.diario;
-                    if (d.historial) historial = d.historial;
-                    if (d.empresa) empresa = d.empresa;
-                    return true;
-                } catch (e) { return false; }
-            }
-
-            function hoyStr() {
-                const d = new Date();
-                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-            }
-
-            function actualizarTimer() {
-                if (!diario.turnoStart || diario.turnoEnd) {
-                    if (diario.turnoStart && diario.turnoEnd) {
-                        const duracion = new Date(diario.turnoEnd) - new Date(diario.turnoStart);
-                        turnoTimer.textContent = formatearDuracion(duracion);
-                    } else {
-                        turnoTimer.textContent = '00:00:00';
-                    }
-                    return;
-                }
-                const ahora = new Date();
-                const diff = ahora - new Date(diario.turnoStart);
-                turnoTimer.textContent = formatearDuracion(diff);
-            }
-
-            function formatearDuracion(ms) {
-                if (ms < 0) ms = 0;
-                const seg = Math.floor(ms / 1000);
-                const h = Math.floor(seg / 3600);
-                const m = Math.floor((seg % 3600) / 60);
-                const s = seg % 60;
-                return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            }
-
-            function alternarTurno() {
-                if (!diario.turnoStart || diario.turnoEnd) {
-                    diario.turnoStart = new Date().toISOString();
-                    diario.turnoEnd = null;
-                    btnTurno.textContent = '⏹ Finalizar';
-                    btnTurno.classList.add('stop');
-                } else {
-                    diario.turnoEnd = new Date().toISOString();
-                    btnTurno.textContent = '▶ Iniciar';
-                    btnTurno.classList.remove('stop');
-                }
-                guardar();
-                actualizarTimer();
-            }
-
-            function getDuracionDia(fecha, viajes, tStart, tEnd) {
-                if (tStart && tEnd) return new Date(tEnd) - new Date(tStart);
-                if (viajes.length > 0) {
-                    const timestamps = viajes.map(v => new Date(v.timestamp).getTime());
-                    return Math.max(...timestamps) - Math.min(...timestamps);
-                }
-                return 0;
-            }
-
-            function procesarDatos() {
-                const hoy = hoyStr();
-                if (diario.fecha !== hoy) {
-                    if (diario.fecha && diario.viajes.length > 0) {
-                        historial.push({ ...diario });
-                    }
-                    diario = { fecha: hoy, viajes: [], nextId: diario.nextId || 1, turnoStart: null, turnoEnd: null };
-                    empresa = 'Uber';
-                    guardar();
-                }
-
-                const viajesArr = diario.viajes || [];
-                const brutoTotal = viajesArr.reduce((s, v) => s + v.monto, 0);
-                const liquidoTotal = brutoTotal - GASTOS;
-
-                viajesHoy.textContent = viajesArr.length;
-                brutoHoy.textContent = '$' + brutoTotal.toLocaleString('es-CL');
-                liquidoHoy.textContent = (liquidoTotal < 0 ? '-$' : '$') + Math.abs(liquidoTotal).toLocaleString('es-CL');
-                liquidoHoy.classList.toggle('negative', liquidoTotal < 0);
-                liquidoHoy.classList.toggle('positive', liquidoTotal >= 0);
-
-                // Totales por app
-                const uberTotal = viajesArr.filter(v => v.empresa === 'Uber').reduce((s, v) => s + v.monto, 0);
-                const didiTotal = viajesArr.filter(v => v.empresa === 'Didi').reduce((s, v) => s + v.monto, 0);
-                const indriveTotal = viajesArr.filter(v => v.empresa === 'InDrive').reduce((s, v) => s + v.monto, 0);
-                totalUber.textContent = '$' + uberTotal.toLocaleString('es-CL');
-                totalDidi.textContent = '$' + didiTotal.toLocaleString('es-CL');
-                totalIndrive.textContent = '$' + indriveTotal.toLocaleString('es-CL');
-
-                // Semana / mes (igual que antes)
-                const ahora = new Date();
-                const diaSemana = ahora.getDay();
-                const lunes = new Date(ahora);
-                lunes.setDate(ahora.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
-                const lunesStr = lunes.toISOString().split('T')[0];
-                const mesInicio = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-                const mesInicioStr = mesInicio.toISOString().split('T')[0];
-
-                let semanaBrutoTotal = 0, semanaHorasTotal = 0, mesBrutoTotal = 0, mesHorasTotal = 0;
-                const todosLosDias = [...historial];
-                if (diario.fecha === hoy && diario.viajes.length > 0) {
-                    todosLosDias.push(diario);
-                }
-
-                todosLosDias.forEach(dia => {
-                    const brutoDia = dia.viajes.reduce((s, v) => s + v.monto, 0);
-                    const horasMs = getDuracionDia(dia.fecha, dia.viajes, dia.turnoStart, dia.turnoEnd);
-                    if (dia.fecha >= lunesStr && dia.fecha <= hoy) {
-                        semanaBrutoTotal += brutoDia;
-                        semanaHorasTotal += horasMs;
-                    }
-                    if (dia.fecha >= mesInicioStr && dia.fecha <= hoy) {
-                        mesBrutoTotal += brutoDia;
-                        mesHorasTotal += horasMs;
-                    }
-                });
-
-                const semanaLiquidoTotal = semanaBrutoTotal - GASTOS;
-                const mesLiquidoTotal = mesBrutoTotal - GASTOS;
-
-                semanaRango.textContent = `${lunesStr.split('-')[2]}/${lunesStr.split('-')[1]} - hoy`;
-                mesRango.textContent = `${mesInicioStr.split('-')[2]}/${mesInicioStr.split('-')[1]} - hoy`;
-                semanaBruto.textContent = '$' + semanaBrutoTotal.toLocaleString('es-CL');
-                semanaLiquido.textContent = (semanaLiquidoTotal < 0 ? '-$' : '$') + Math.abs(semanaLiquidoTotal).toLocaleString('es-CL');
-                semanaHoras.textContent = formatearHoras(semanaHorasTotal);
-                mesBruto.textContent = '$' + mesBrutoTotal.toLocaleString('es-CL');
-                mesLiquido.textContent = (mesLiquidoTotal < 0 ? '-$' : '$') + Math.abs(mesLiquidoTotal).toLocaleString('es-CL');
-                mesHoras.textContent = formatearHoras(mesHorasTotal);
-            }
-
-            function formatearHoras(ms) {
-                const h = Math.floor(ms / 3600000);
-                const m = Math.floor((ms % 3600000) / 60000);
-                return `${h}h ${m}m`;
-            }
-
-            function renderHistorial() {
-                historyList.innerHTML = '';
-                const viajesArr = diario.viajes || [];
-                historyCount.textContent = `${viajesArr.length} viaje${viajesArr.length !== 1 ? 's' : ''}`;
-                if (viajesArr.length === 0) {
-                    historyList.innerHTML = '<li style="text-align:center;padding:20px;color:var(--text-muted);">📭 Sin viajes hoy</li>';
-                    return;
-                }
-                viajesArr.forEach((v, i) => {
-                    const li = document.createElement('li');
-                    li.className = 'history-item';
-                    const hora = new Date(v.timestamp).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-                    const tagClass = v.empresa === 'Uber' ? 'tag-uber' : v.empresa === 'Didi' ? 'tag-didi' : 'tag-indrive';
-                    li.innerHTML = `
-                        <div class="item-info">
-                            <span class="item-num">${i+1}</span>
-                            <div class="item-meta">
-                                <span class="item-amount">$${v.monto.toLocaleString('es-CL')}</span>
-                                <span class="item-time">${hora}</span>
-                            </div>
-                            <span class="item-tag ${tagClass}">${v.empresa}</span>
+            const html = `
+                <div class="history-item" style="animation-delay: ${delay}">
+                    <div class="history-item-left">
+                        <span class="history-item-time tabular-nums">${item.time}</span>
+                        <div class="history-item-desc">
+                            ${dotHtml}
+                            ${item.title}
                         </div>
-                        <button class="btn-del">✕</button>
-                    `;
-                    li.querySelector('.btn-del').addEventListener('click', () => eliminarViaje(v.id, li));
-                    historyList.appendChild(li);
-                });
+                    </div>
+                    <div class="history-item-val ${colorClass} tabular-nums">
+                        ${sign}${formatMoney(item.amount)}
+                    </div>
+                </div>
+            `;
+            list.insertAdjacentHTML('beforeend', html);
+        });
+        lucide.createIcons(); // Reiniciar iconos en lista inyectada
+    }
+
+    // ==========================================
+    // TURNO Y TIMER
+    // ==========================================
+    function toggleShift() {
+        const btn = document.getElementById('btnToggleShift');
+        if(!state.shift.active) {
+            // Iniciar
+            state.shift.active = true;
+            state.shift.startTime = Date.now() - (state.shift.seconds * 1000);
+            state.shift.timerId = setInterval(updateTimerUI, 1000);
+            btn.classList.remove('inactive');
+            btn.classList.add('active');
+            btn.innerText = 'Finalizar Turno';
+            showToast('Turno iniciado. ¡Buen viaje!', 'success');
+        } else {
+            // Detener
+            state.shift.active = false;
+            clearInterval(state.shift.timerId);
+            btn.classList.remove('active');
+            btn.classList.add('inactive');
+            btn.innerText = 'Iniciar Turno';
+            showToast('Turno pausado.', '');
+        }
+    }
+
+    function updateTimerUI() {
+        const now = Date.now();
+        const diff = Math.floor((now - state.shift.startTime) / 1000);
+        state.shift.seconds = diff;
+        
+        const hrs = String(Math.floor(diff / 3600)).padStart(2, '0');
+        const mins = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+        const secs = String(diff % 60).padStart(2, '0');
+        
+        document.getElementById('shiftTimer').innerText = `${hrs}:${mins}:${secs}`;
+    }
+
+    // ==========================================
+    // UTILIDADES UI (Animaciones, Temas, Toasts)
+    // ==========================================
+    function triggerBounce(elementId) {
+        const el = document.getElementById(elementId);
+        el.classList.remove('bounce');
+        void el.offsetWidth; // Trigger reflow
+        el.classList.add('bounce');
+        setTimeout(() => el.classList.remove('bounce'), 300);
+    }
+
+    function setTheme(countryCode) {
+        const t = themes[countryCode];
+        const root = document.documentElement;
+        
+        root.style.setProperty('--accent', t.accent);
+        root.style.setProperty('--accent2', t.accent2);
+        
+        // Actualizamos las clases activas en los botones del modal de forma segura
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.theme === countryCode) {
+                btn.classList.add('active');
             }
+        });
+        
+        closeThemeModal();
+    }
 
-            function eliminarViaje(id, li) {
-                li.classList.add('removing');
-                li.addEventListener('animationend', () => {
-                    diario.viajes = diario.viajes.filter(v => v.id !== id);
-                    guardar();
-                    renderHistorial();
-                    procesarDatos();
-                }, { once: true });
-            }
+    function openThemeModal() {
+        document.getElementById('themeModal').classList.add('active');
+    }
+    
+    function closeThemeModal() {
+        document.getElementById('themeModal').classList.remove('active');
+    }
 
-            function agregarViaje(monto) {
-                const nuevo = {
-                    id: diario.nextId++,
-                    monto: Math.round(monto),
-                    empresa: empresa,
-                    timestamp: new Date().toISOString()
-                };
-                diario.viajes.push(nuevo);
-                guardar();
-                renderHistorial();
-                procesarDatos();
-                historyList.scrollTop = historyList.scrollHeight;
-                if (navigator.vibrate) navigator.vibrate(15);
-                toastMsg(`✅ $${Math.round(monto).toLocaleString('es-CL')} · ${empresa}`);
-            }
+    function showToast(message, type = '') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type === 'success' ? 'toast-success' : type === 'error' ? 'toast-error' : ''}`;
+        
+        let iconHtml = '';
+        if(type === 'success') iconHtml = `<i data-lucide="check-circle"></i>`;
+        if(type === 'error') iconHtml = `<i data-lucide="alert-circle"></i>`;
+        if(!type) iconHtml = `<i data-lucide="info"></i>`;
 
-            function abrirModal() {
-                modalContent.innerHTML = `Se archivará el día de hoy (${diario.viajes.length} viajes) y se reiniciarán los contadores.`;
-                modalOverlay.style.display = 'flex';
-            }
-            function cerrarModal() { modalOverlay.style.display = 'none'; }
+        toast.innerHTML = `${iconHtml} <span>${message}</span>`;
+        container.appendChild(toast);
+        lucide.createIcons();
 
-            function archivarDia() {
-                if (diario.viajes.length > 0 || diario.turnoStart) {
-                    historial.push({ ...diario });
-                }
-                diario = { fecha: hoyStr(), viajes: [], nextId: diario.nextId || 1, turnoStart: null, turnoEnd: null };
-                btnTurno.textContent = '▶ Iniciar';
-                btnTurno.classList.remove('stop');
-                guardar();
-                renderHistorial();
-                procesarDatos();
-                cerrarModal();
-                toastMsg('📁 Día archivado. Nuevo día listo.');
-            }
-
-            let toastTimer;
-            function toastMsg(msg) {
-                if (toastTimer) clearTimeout(toastTimer);
-                toast.textContent = msg;
-                toast.className = 'toast';
-                void toast.offsetWidth;
-                toast.classList.add('show');
-                toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
-            }
-
-            btnTurno.addEventListener('click', alternarTurno);
-            btnCorto.addEventListener('click', () => agregarViaje(VIAJE_CORTO));
-            btnRegistrar.addEventListener('click', () => {
-                const v = parseInt(inputMonto.value, 10);
-                if (isNaN(v) || v <= 0) { toastMsg('Monto inválido'); return; }
-                agregarViaje(v);
-                inputMonto.value = '';
-            });
-            inputMonto.addEventListener('keydown', e => { if (e.key === 'Enter') btnRegistrar.click(); });
-            btnCerrar.addEventListener('click', abrirModal);
-            btnCancelar.addEventListener('click', cerrarModal);
-            btnConfirmar.addEventListener('click', archivarDia);
-            modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) cerrarModal(); });
-
-            companyBtns.forEach(b => {
-                b.addEventListener('click', () => {
-                    const c = b.dataset.company;
-                    if (c !== empresa) {
-                        empresa = c;
-                        companyBtns.forEach(x => x.classList.toggle('active', x.dataset.company === c));
-                        guardar();
-                    }
-                });
-            });
-
-            function init() {
-                if (!cargar()) {
-                    diario = { fecha: hoyStr(), viajes: [], nextId: 1, turnoStart: null, turnoEnd: null };
-                    historial = [];
-                    empresa = 'Uber';
-                    guardar();
-                }
-                companyBtns.forEach(b => b.classList.toggle('active', b.dataset.company === empresa));
-                if (diario.turnoStart && !diario.turnoEnd) {
-                    btnTurno.textContent = '⏹ Finalizar';
-                    btnTurno.classList.add('stop');
-                } else {
-                    btnTurno.textContent = '▶ Iniciar';
-                    btnTurno.classList.remove('stop');
-                }
-                actualizarTimer();
-                renderHistorial();
-                procesarDatos();
-                fechaEl.textContent = new Date().toLocaleDateString('es-CL', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-                setInterval(() => { actualizarTimer(); }, 1000);
-            }
-
-            init();
-        })();
-    </script>
+        // Eliminar auto
+        setTimeout(() => {
+            toast.style.animation = 'toastExit 0.25s forwards';
+            setTimeout(() => toast.remove(), 250);
+        }, 3000);
+    }
+</script>
 </body>
 </html>
